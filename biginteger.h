@@ -19,7 +19,7 @@ class BigInteger {
     bool is_zero() const;
     void delete_zeros();
     friend bool less(const BigInteger& a, const BigInteger& b, bool by_abs);
-    friend BigInteger gcd(const BigInteger& a, const BigInteger& b);
+    friend BigInteger gcd(BigInteger a, BigInteger b);
     friend class Rational;
 
   public:

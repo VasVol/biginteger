@@ -383,11 +383,14 @@ void BigInteger::delete_zeros() {
     }
 }
 
-BigInteger gcd(const BigInteger& a, const BigInteger& b) {
-    if (b == 0) {
-        return a;
+BigInteger gcd(BigInteger a, BigInteger b) {
+    BigInteger tmp;
+    while (b != 0) {
+        tmp = a % b;
+        a = b;
+        b = tmp;
     }
-    return gcd(b, a % b);
+    return a;
 }
 
 Rational::Rational(const BigInteger& val) : x(val), y(1) {
