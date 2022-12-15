@@ -6,15 +6,15 @@ BigInteger::operator bool() const {
 
 BigInteger BigInteger::operator-() const {
     BigInteger tmp = *this;
-    if ((tmp.digits.size() != 1) || (tmp.digits[0] != 0)) {
-        tmp.sign *= (-1);
+    if (!is_zero()) {
+        tmp.sign_ *= (-1);
     }
     return tmp;
 }
 
 BigInteger& BigInteger::operator=(const BigInteger& other) {
-    sign = other.sign;
-    digits = other.digits;
+    sign_ = other.sign_;
+    digits_ = other.digits_;
     return *this;
 }
 
@@ -36,13 +36,13 @@ BigInteger::BigInteger(int x) : BigInteger(std::to_string(x)) {}
 BigInteger::BigInteger(const std::string& s) {
     int k = 0;
     if (s[0] == '-') {
-        sign = -1;
+        sign_ = -1;
         ++k;
     } else if (s[0] == '+') {
-        sign = 1;
+        sign_ = 1;
         ++k;
     } else {
-        sign = 1;
+        sign_ = 1;
     }
     int sz = static_cast<int>(s.size());
     std::vector<int> tmp;
@@ -56,7 +56,7 @@ BigInteger::BigInteger(const std::string& s) {
             sum *= 10;
             sum += tmp[j];
         }
-        digits.push_back(sum);
+        digits_.push_back(sum);
     }
     fix();
 }
@@ -66,7 +66,7 @@ BigInteger::BigInteger(const char* arr) : BigInteger(std::string(arr)) {}
 void BigInteger::fix() {
     delete_zeros();
     if (is_zero()) {
-        sign = 1;
+        sign_ = 1;
     }
 }
 
@@ -76,12 +76,12 @@ std::string BigInteger::toString() const {
         ans = "0";
         return ans;
     }
-    if (sign == -1) {
+    if (sign_ == -1) {
         ans.push_back('-');
     }
-    int sz = static_cast<int>(digits.size());
+    int sz = static_cast<int>(digits_.size());
     for (int i = sz - 1; i >= 0; --i) {
-        std::string s = std::to_string(digits[i]);
+        std::string s = std::to_string(digits_[i]);
         if (i != sz - 1) {
             while (s.size() < number_of_digits) {
                 s = '0' + s;
@@ -106,46 +106,46 @@ std::istream& operator>>(std::istream& in, BigInteger& a) {
 }
 
 bool less(const BigInteger& a, const BigInteger& b, bool by_abs) {
-    bool flag = true;
+    bool positive_signs = true;
     if (!by_abs) {
-        if (a.sign < b.sign) {
+        if (a.sign_ < b.sign_) {
             return true;
         }
-        if (a.sign > b.sign) {
+        if (a.sign_ > b.sign_) {
             return false;
         }
-        if (a.sign == -1) {
-            flag = false;
+        if (a.sign_ == -1) {
+            positive_signs = false;
         }
     }
-    int sz1 = static_cast<int>(a.digits.size());
-    int sz2 = static_cast<int>(b.digits.size());
+    int sz1 = static_cast<int>(a.digits_.size());
+    int sz2 = static_cast<int>(b.digits_.size());
     if (sz1 < sz2) {
-        return flag;
+        return positive_signs;
     }
     if (sz2 < sz1) {
-        return !flag;
+        return !positive_signs;
     }
     for (int i = sz1 - 1; i >= 0; --i) {
-        if (a.digits[i] < b.digits[i]) {
-            return flag;
-        } else if (a.digits[i] > b.digits[i]) {
-            return !flag;
+        if (a.digits_[i] < b.digits_[i]) {
+            return positive_signs;
+        } else if (a.digits_[i] > b.digits_[i]) {
+            return !positive_signs;
         }
     }
-    return !flag;
+    return !positive_signs;
 }
 
 void BigInteger::minus(const BigInteger& other) {
-    int sz2 = static_cast<int>(other.digits.size());
+    int sz2 = static_cast<int>(other.digits_.size());
     int carry = 0;
     for (int i = 0; (i < sz2) || (carry != 0); ++i) {
-        int x = digits[i] - (i < sz2 ? other.digits[i] : 0) - carry;
+        int x = digits_[i] - (i < sz2 ? other.digits_[i] : 0) - carry;
         if (x >= 0) {
-            digits[i] = x;
+            digits_[i] = x;
             carry = 0;
         } else {
-            digits[i] = BigInteger::base + x;
+            digits_[i] = BigInteger::base + x;
             carry = 1;
         }
     }
@@ -153,21 +153,17 @@ void BigInteger::minus(const BigInteger& other) {
 }
 
 BigInteger& BigInteger::operator+=(const BigInteger& other) {
-    if ((digits == other.digits) && (sign != other.sign)) {
-        *this = BigInteger(0);
-        return *this;
-    }
-    int sz1 = static_cast<int>(digits.size());
-    int sz2 = static_cast<int>(other.digits.size());
-    if (sign == other.sign) {
+    int sz1 = static_cast<int>(digits_.size());
+    int sz2 = static_cast<int>(other.digits_.size());
+    if (sign_ == other.sign_) {
         int carry = 0;
         for (int i = 0; (i < sz2) || (carry != 0); ++i) {
-            int x = carry + (i < sz1 ? digits[i] : 0) +
-                    (i < sz2 ? other.digits[i] : 0);
+            int x = carry + (i < sz1 ? digits_[i] : 0) +
+                    (i < sz2 ? other.digits_[i] : 0);
             if (i < sz1) {
-                digits[i] = x % base;
+                digits_[i] = x % base;
             } else {
-                digits.push_back(x % base);
+                digits_.push_back(x % base);
             }
             carry = x / base;
         }
@@ -177,7 +173,7 @@ BigInteger& BigInteger::operator+=(const BigInteger& other) {
             tmp.minus(*this);
             *this = tmp;
         } else {
-            this->minus(other);
+            minus(other);
         }
     }
     return *this;
@@ -194,7 +190,7 @@ bool operator<(const BigInteger& a, const BigInteger& b) {
 }
 
 bool operator==(const BigInteger& a, const BigInteger& b) {
-    return (a.sign == b.sign) && (a.digits == b.digits);
+    return (a.sign_ == b.sign_) && (a.digits_ == b.digits_);
 }
 
 bool operator!=(const BigInteger& a, const BigInteger& b) {
@@ -236,28 +232,28 @@ BigInteger BigInteger::operator--(int) {
 }
 
 void BigInteger::move(int k) {
-    std::vector<int> ans(digits.size() + k, 0);
-    for (int i = 0; i < static_cast<int>(digits.size()); ++i) {
-        ans[i + k] = digits[i];
+    std::vector<int> ans(digits_.size() + k, 0);
+    for (int i = 0; i < static_cast<int>(digits_.size()); ++i) {
+        ans[i + k] = digits_[i];
     }
-    digits = ans;
+    digits_ = ans;
 }
 
 void BigInteger::multiply_by_digit(long long x) {
     int carry = 0;
-    for (int& digit : digits) {
+    for (int& digit : digits_) {
         long long product = digit * x + carry;
         digit = static_cast<int>(product % BigInteger::base);
         carry = static_cast<int>(product / BigInteger::base);
     }
     if (carry > 0) {
-        digits.push_back(carry);
+        digits_.push_back(carry);
     }
     fix();
 }
 
 bool BigInteger::is_zero() const {
-    return (digits.size() == 1) && (digits[0] == 0);
+    return (digits_.size() == 1) && (digits_[0] == 0);
 }
 
 BigInteger& BigInteger::operator*=(const BigInteger& other) {
@@ -272,13 +268,13 @@ BigInteger& BigInteger::operator*=(const BigInteger& other) {
         return *this;
     }
     BigInteger ans = 0;
-    for (int i = 0; i < static_cast<int>(other.digits.size()); ++i) {
+    for (int i = 0; i < static_cast<int>(other.digits_.size()); ++i) {
         BigInteger tmp = *this;
-        tmp.multiply_by_digit(other.digits[i]);
+        tmp.multiply_by_digit(other.digits_[i]);
         tmp.move(i);
         ans += tmp;
     }
-    ans.sign = sign * other.sign;
+    ans.sign_ = sign_ * other.sign_;
     *this = ans;
     fix();
     return *this;
@@ -291,7 +287,9 @@ BigInteger operator*(const BigInteger& a, const BigInteger& b) {
 }
 
 BigInteger& BigInteger::operator-=(const BigInteger& other) {
-    BigInteger tmp = other * (-1);
+    //BigInteger tmp = other * (-1);
+    BigInteger tmp = other;
+    tmp.change_sign();
     *this += tmp;
     return *this;
 }
@@ -307,21 +305,21 @@ BigInteger& BigInteger::operator/=(const BigInteger& other) {
         return *this;
     }
     if (other == -1) {
-        sign *= -1;
+        sign_ *= -1;
         return *this;
     }
-    if (this->is_zero()) {
+    if (is_zero()) {
         return *this;
     }
-    this->sign *= other.sign;
+    sign_ *= other.sign_;
     BigInteger b = other;
-    b.sign = 1;
+    b.sign_ = 1;
     BigInteger ans = 0;
     BigInteger curr = 0;
-    int sz = static_cast<int>(digits.size());
+    int sz = static_cast<int>(digits_.size());
     for (int i = sz - 1; (curr < b) && (i >= 0); --i) {
         curr *= base;
-        curr += digits[i];
+        curr += digits_[i];
         int l = 0;
         int r = base;
         while (r - l > 1) {
@@ -334,14 +332,14 @@ BigInteger& BigInteger::operator/=(const BigInteger& other) {
             }
         }
         if (ans.is_zero()) {
-            ans.digits[0] = l;
+            ans.digits_[0] = l;
         } else {
-            ans.digits.push_back(l);
+            ans.digits_.push_back(l);
         }
         curr -= l * b;
     }
-    std::reverse(ans.digits.begin(), ans.digits.end());
-    this->digits = ans.digits;
+    std::reverse(ans.digits_.begin(), ans.digits_.end());
+    digits_ = ans.digits_;
     fix();
     return *this;
 }
@@ -353,15 +351,15 @@ BigInteger operator/(const BigInteger& a, const BigInteger& b) {
 }
 
 BigInteger& BigInteger::operator%=(const BigInteger& other) {
-    int ans_sign = this->sign;
-    this->sign = 1;
+    int ans_sign = sign_;
+    sign_ = 1;
     BigInteger a = other;
-    a.sign = 1;
+    a.sign_ = 1;
     *this -= (*this / a) * a;
-    this->sign = ans_sign;
+    sign_ = ans_sign;
     delete_zeros();
     if (is_zero()) {
-        sign = 1;
+        sign_ = 1;
     }
     fix();
     return *this;
@@ -374,12 +372,8 @@ BigInteger operator%(const BigInteger& a, const BigInteger& b) {
 }
 
 void BigInteger::delete_zeros() {
-    for (int i = static_cast<int>(digits.size()) - 1; i >= 1; --i) {
-        if (digits[i] == 0) {
-            digits.pop_back();
-        } else {
-            break;
-        }
+    while ((digits_.back() == 0) && (digits_.size() >= 2)) {
+        digits_.pop_back();
     }
 }
 
@@ -393,13 +387,19 @@ BigInteger gcd(BigInteger a, BigInteger b) {
     return a;
 }
 
-Rational::Rational(const BigInteger& val) : x(val), y(1) {
-    x.sign = 1;
-    sign = val.sign;
+void BigInteger::change_sign() {
+    if (!is_zero()) {
+        sign_ *= -1;
+    }
+}
+
+Rational::Rational(const BigInteger& val) : numerator_(val), denominator_(1) {
+    numerator_.sign_ = 1;
+    sign = val.sign_;
     fix();
 }
-Rational::Rational(int val) : x(val), y(1) {
-    x.sign = 1;
+Rational::Rational(int val) : numerator_(val), denominator_(1) {
+    numerator_.sign_ = 1;
     if (val >= 0) {
         sign = 1;
     } else {
@@ -409,27 +409,36 @@ Rational::Rational(int val) : x(val), y(1) {
 }
 Rational::Rational() : Rational(0) {}
 Rational::Rational(const Rational& other) = default;
-Rational& Rational::operator+=(const Rational& other) {
-    x = x * other.y + other.sign * y * other.x;
-    y = y * other.y;
+BigInteger plus_or_minus(const BigInteger& a, const BigInteger& b, bool flag) {
+    if (flag) {
+        return a + b;
+    }
+    return a - b;
+}
+Rational& Rational::increase_or_decrease(const Rational& other, bool flag) {
+    numerator_ =
+        plus_or_minus(numerator_ * other.denominator_,
+                      other.sign * denominator_ * other.numerator_, flag);
+    denominator_ = denominator_ * other.denominator_;
     fix();
     return *this;
+}
+Rational& Rational::operator+=(const Rational& other) {
+    return increase_or_decrease(other, true);
 }
 Rational& Rational::operator-=(const Rational& other) {
-    *this += other * (-1);
-    fix();
-    return *this;
+    return increase_or_decrease(other, false);
 }
 Rational& Rational::operator*=(const Rational& other) {
-    x *= other.x;
-    y *= other.y;
+    numerator_ *= other.numerator_;
+    denominator_ *= other.denominator_;
     sign *= other.sign;
     fix();
     return *this;
 }
 Rational& Rational::operator/=(const Rational& other) {
-    x *= other.y;
-    y *= other.x;
+    numerator_ *= other.denominator_;
+    denominator_ *= other.numerator_;
     sign *= other.sign;
     fix();
     return *this;
@@ -446,10 +455,10 @@ std::string Rational::toString() const {
     if (sign == -1) {
         ans += '-';
     }
-    ans += x.toString();
-    if (y != 1) {
+    ans += numerator_.toString();
+    if (denominator_ != 1) {
         ans += '/';
-        ans += y.toString();
+        ans += denominator_.toString();
     }
     return ans;
 }
@@ -458,8 +467,8 @@ std::string Rational::asDecimal(int precision = 0) const {
     for (int i = 0; i < precision; ++i) {
         a *= 10;
     }
-    BigInteger ans = (x * a) / y;
-    ans.sign = sign;
+    BigInteger ans = (numerator_ * a) / denominator_;
+    ans.sign_ = sign;
     std::string s = ans.toString();
     int pos = static_cast<int>(s.size()) - precision;
     if (pos <= 0) {
@@ -482,10 +491,11 @@ std::string Rational::asDecimal(int precision = 0) const {
     }
 }
 Rational::operator double() const {
-    return std::stod(asDecimal(500));
+    return std::stod(asDecimal(20));
 }
 bool operator==(const Rational& a, const Rational& b) {
-    return (a.sign == b.sign) && (a.x == b.x) && (a.y == b.y);
+    return (a.sign == b.sign) && (a.numerator_ == b.numerator_) &&
+           (a.denominator_ == b.denominator_);
 }
 bool operator!=(const Rational& a, const Rational& b) {
     return !(a == b);
@@ -498,9 +508,9 @@ bool operator<(const Rational& a, const Rational& b) {
         return false;
     }
     if (a.sign == 1) {
-        return (a.x * b.y < b.x * a.y);
+        return (a.numerator_ * b.denominator_ < b.numerator_ * a.denominator_);
     }
-    return (a.x * b.y > b.x * a.y);
+    return (a.numerator_ * b.denominator_ > b.numerator_ * a.denominator_);
 }
 bool operator>(const Rational& a, const Rational& b) {
     return b < a;
@@ -534,19 +544,19 @@ Rational operator/(const Rational& a, const Rational& b) {
 }
 
 void Rational::fix_sign() {
-    sign *= x.sign * y.sign;
-    x.sign = 1;
-    y.sign = 1;
+    sign *= numerator_.sign_ * denominator_.sign_;
+    numerator_.sign_ = 1;
+    denominator_.sign_ = 1;
 }
 void Rational::reduce() {
-    BigInteger tmp = gcd(x, y);
-    x /= tmp;
-    y /= tmp;
+    BigInteger tmp = gcd(numerator_, denominator_);
+    numerator_ /= tmp;
+    denominator_ /= tmp;
 }
 void Rational::fix() {
     reduce();
     fix_sign();
-    if (x.is_zero()) {
+    if (numerator_.is_zero()) {
         sign = 1;
     }
 }

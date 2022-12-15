@@ -8,8 +8,8 @@
 
 class BigInteger {
   private:
-    int sign;
-    std::vector<int> digits;
+    int sign_;
+    std::vector<int> digits_;
     static const int base = 1000 * 1000 * 1000;
     static const int number_of_digits = 9;
     void multiply_by_digit(long long x);
@@ -41,6 +41,7 @@ class BigInteger {
     BigInteger operator--(int);
     std::string toString() const;
     BigInteger& operator=(const BigInteger& other);
+    void change_sign();
     friend std::istream& operator>>(std::istream& in, BigInteger& a);
     friend bool operator==(const BigInteger& a, const BigInteger& b);
 };
@@ -50,7 +51,6 @@ BigInteger operator"" _bi(unsigned long long x);
 std::ostream& operator<<(std::ostream& out, const BigInteger& a);
 std::istream& operator>>(std::istream& in, BigInteger& a);
 bool less(const BigInteger& a, const BigInteger& b, bool by_abs);
-void minus(BigInteger& a, const BigInteger& b);
 BigInteger operator+(const BigInteger& a, const BigInteger& b);
 BigInteger operator-(const BigInteger& a, const BigInteger& b);
 BigInteger operator*(const BigInteger& a, const BigInteger& b);
@@ -65,12 +65,13 @@ bool operator>=(const BigInteger& a, const BigInteger& b);
 
 class Rational {
   private:
-    BigInteger x;
-    BigInteger y;
+    BigInteger numerator_;
+    BigInteger denominator_;
     int sign;
     void fix_sign();
     void reduce();
     void fix();
+    Rational& increase_or_decrease(const Rational& other, bool flag);
 
   public:
     Rational(const BigInteger& val);
